@@ -18,6 +18,7 @@ import {
   Vibrate,
   Menu,
   Palette,
+  TrendingUp,
 } from 'lucide-react';
 import { sounds } from '../utils/audio';
 import { SlidebarTab, BoardTheme } from '../types/game';
@@ -35,6 +36,7 @@ interface GameOverModalProps {
   onHome: () => void;
   dailyRank?: number | null;
   onOpenLeaderboard?: () => void;
+  onOpenStats?: () => void;
 }
 
 export const GameOverModal: React.FC<GameOverModalProps> = ({
@@ -49,6 +51,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   onHome,
   dailyRank,
   onOpenLeaderboard,
+  onOpenStats,
 }) => {
   // Listen for Space/Enter to restart
   useEffect(() => {
@@ -151,11 +154,25 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             sounds.playClick();
             onRestart();
           }}
-          className="w-full py-3 px-4 rounded-xl font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-[0_4px_20px_rgba(6,182,212,0.4)] transform hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer mb-1.5"
+          className="w-full py-3 px-4 rounded-xl font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-[0_4px_20px_rgba(6,182,212,0.4)] transform hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer mb-2"
         >
           <RotateCcw className="w-4 h-4" />
           <span>PLAY AGAIN</span>
         </button>
+
+        {/* View 30-Day Stats CTA */}
+        {onOpenStats && (
+          <button
+            onClick={() => {
+              sounds.playClick();
+              onOpenStats();
+            }}
+            className="w-full py-2.5 px-4 rounded-xl font-black text-xs text-cyan-300 hover:text-white bg-gradient-to-r from-cyan-950/60 to-blue-950/60 hover:from-cyan-900/60 hover:to-blue-900/60 border border-cyan-700/50 transition-all flex items-center justify-center gap-2 cursor-pointer mb-1.5 shadow-sm"
+          >
+            <TrendingUp className="w-4 h-4 stroke-[2.5] text-cyan-400" />
+            <span>30-Day Score Progress</span>
+          </button>
+        )}
 
         <button
           onClick={() => {

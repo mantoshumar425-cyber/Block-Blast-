@@ -6,13 +6,14 @@
 import React, { useEffect } from 'react';
 import { GameMode } from '../types/game';
 import { sounds } from '../utils/audio';
-import { Settings } from 'lucide-react';
+import { Settings, TrendingUp } from 'lucide-react';
 
 interface TitleScreenProps {
   onStart: (mode: GameMode) => void;
   onOpenSettings: () => void;
   onOpenMoreGames: () => void;
   onSelectPromoGame: (gameName: string) => void;
+  onOpenStats?: () => void;
 }
 
 export const TitleScreen: React.FC<TitleScreenProps> = ({
@@ -20,6 +21,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onOpenSettings,
   onOpenMoreGames,
   onSelectPromoGame,
+  onOpenStats,
 }) => {
   // Listen for Enter / Space keys to quickly start Classic
   useEffect(() => {
@@ -36,8 +38,25 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
   return (
     <div className="relative w-full h-screen overflow-hidden flex flex-col justify-between items-center py-6 px-4 select-none bg-gradient-to-b from-[#0165ea] via-[#005fe0] to-[#004bbd]">
-      {/* Top Header: Settings Button on the right */}
-      <header className="w-full max-w-md flex items-center justify-end z-20 pt-2 px-2">
+      {/* Top Header: Stats Button on left, Settings on right */}
+      <header className="w-full max-w-md flex items-center justify-between z-20 pt-2 px-2">
+        {onOpenStats ? (
+          <button
+            onClick={() => {
+              sounds.playClick();
+              onOpenStats();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-black shadow-md border border-white/20 transition-all cursor-pointer backdrop-blur-xs"
+            title="30-Day Score Progress & Consistency"
+            aria-label="View Stats"
+          >
+            <TrendingUp className="w-4 h-4 stroke-[2.8] text-cyan-300" />
+            <span className="tracking-wide">Stats</span>
+          </button>
+        ) : (
+          <div />
+        )}
+
         <button
           onClick={() => {
             sounds.playClick();

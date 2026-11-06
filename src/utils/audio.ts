@@ -6,10 +6,13 @@
 // Procedural Web Audio API sound synthesizer and ambient music engine for Block Blast
 // 100% self-contained and offline capable with zero external audio assets.
 
+export type HapticPreset = 'sharp' | 'heavy' | 'soft';
+
 class SoundManager {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
   private hapticsEnabled: boolean = true;
+  private hapticPreset: HapticPreset = 'heavy';
 
   // Independent volume controls (0.0 to 1.0)
   private musicVolume: number = 0.45;
@@ -31,6 +34,11 @@ class SoundManager {
 
       const savedHaptics = localStorage.getItem('blockblast_haptics');
       this.hapticsEnabled = savedHaptics !== 'false';
+
+      const savedPreset = localStorage.getItem('blockblast_haptic_preset');
+      if (savedPreset === 'sharp' || savedPreset === 'heavy' || savedPreset === 'soft') {
+        this.hapticPreset = savedPreset;
+      }
 
       const savedVibLevel = localStorage.getItem('blockblast_vibration_level');
       if (savedVibLevel !== null) {
@@ -168,16 +176,116 @@ class SoundManager {
     }
   }
 
+  public getHapticPreset(): HapticPreset {
+    return this.hapticPreset;
+  }
+
+  public setHapticPreset(preset: HapticPreset): void {
+    this.hapticPreset = preset;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('blockblast_haptic_preset', preset);
+    }
+  }
+
+  public testHapticPreset(preset?: HapticPreset): void {
+    const target = preset || this.hapticPreset;
+    const mult = this.vibrationLevel === 0 ? 1 : this.vibrationLevel === 1 ? 0.7 : this.vibrationLevel === 2 ? 1 : 1.35;
+
+    // Trigger physical mobile vibration
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        if (target === 'sharp') {
+          // Sharp: Snappy, crisp double-tap clicks
+          navigator.vibrate([Math.round(14 * mult), 22, Math.round(18 * mult)]);
+        } else if (target === 'heavy') {
+          // Heavy: Deep, strong resonant rumble blast
+          navigator.vibrate([Math.round(60 * mult), 30, Math.round(85 * mult)]);
+        } else {
+          // Soft: Smooth, gentle cushioning pulse
+          navigator.vibrate([Math.round(28 * mult), 40, Math.round(28 * mult)]);
+        }
+      } catch {}
+    }
+
+    // Play subtle synthetic acoustic feedback so desktop/laptops also perceive the distinction
+    this.playTactileAcoustic(target);
+  }
+
+  public playTactileAcoustic(preset: HapticPreset) {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx || !this.sfxGainNode) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      if (preset === 'sharp') {
+        // High crisp tactile click
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(640, now);
+        osc.frequency.exponentialRampToValueAtTime(160, now + 0.035);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(this.sfxGainNode);
+        osc.start(now);
+        osc.stop(now + 0.045);
+      } else if (preset === 'heavy') {
+        // Deep sub-bass thud rumble
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(115, now);
+        osc.frequency.exponentialRampToValueAtTime(32, now + 0.12);
+        gain.gain.setValueAtTime(0.32, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        osc.connect(gain);
+        gain.connect(this.sfxGainNode);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else {
+        // Soft mellow pop
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(290, now);
+        osc.frequency.exponentialRampToValueAtTime(95, now + 0.07);
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.sfxGainNode);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+    } catch {}
+  }
+
   public triggerHaptic(type: 'pickup' | 'place' | 'blast') {
     if (!this.hapticsEnabled || this.vibrationLevel === 0 || typeof navigator === 'undefined' || !navigator.vibrate) return;
     try {
       const mult = this.vibrationLevel === 1 ? 0.6 : this.vibrationLevel === 2 ? 1 : 1.4;
       if (type === 'pickup') {
-        navigator.vibrate(Math.round(12 * mult));
+        if (this.hapticPreset === 'sharp') {
+          navigator.vibrate(Math.round(8 * mult));
+        } else if (this.hapticPreset === 'heavy') {
+          navigator.vibrate(Math.round(18 * mult));
+        } else {
+          navigator.vibrate(Math.round(12 * mult));
+        }
       } else if (type === 'place') {
-        navigator.vibrate(Math.round(22 * mult));
+        if (this.hapticPreset === 'sharp') {
+          navigator.vibrate([Math.round(10 * mult), 15, Math.round(12 * mult)]);
+        } else if (this.hapticPreset === 'heavy') {
+          navigator.vibrate(Math.round(28 * mult));
+        } else {
+          navigator.vibrate(Math.round(18 * mult));
+        }
       } else if (type === 'blast') {
-        navigator.vibrate([Math.round(35 * mult), 25, Math.round(45 * mult)]);
+        if (this.hapticPreset === 'sharp') {
+          navigator.vibrate([Math.round(18 * mult), 20, Math.round(22 * mult)]);
+        } else if (this.hapticPreset === 'heavy') {
+          navigator.vibrate([Math.round(55 * mult), 25, Math.round(75 * mult)]);
+        } else {
+          navigator.vibrate([Math.round(26 * mult), 35, Math.round(26 * mult)]);
+        }
       }
     } catch {}
   }
@@ -449,6 +557,71 @@ class SoundManager {
 
       osc.start(now);
       osc.stop(now + 0.26);
+    } catch {}
+  }
+
+  public playCelebrationFanfare(tier: 'great' | 'amazing' | 'awesome' | 'perfect' | 'unbelievable') {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx || !this.sfxGainNode) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      let notes: number[];
+      if (tier === 'great') {
+        notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      } else if (tier === 'amazing') {
+        notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      } else if (tier === 'awesome') {
+        notes = [587.33, 739.99, 880.00, 1174.66]; // D5, F#5, A5, D6
+      } else if (tier === 'perfect') {
+        notes = [659.25, 783.99, 987.77, 1318.51, 1567.98]; // E5, G5, B5, E6, G6
+      } else {
+        // unbelievable
+        notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // Full Major 9th flourish
+      }
+
+      // 1. Arpeggio flourish
+      notes.forEach((freq, idx) => {
+        if (!this.ctx || !this.sfxGainNode) return;
+        const noteTime = now + idx * 0.055;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq, noteTime);
+
+        gain.gain.setValueAtTime(0, noteTime);
+        gain.gain.linearRampToValueAtTime(0.2, noteTime + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.45);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGainNode);
+
+        osc.start(noteTime);
+        osc.stop(noteTime + 0.48);
+      });
+
+      // 2. Resonant brass/bell foundation chord
+      const chordDelay = now + notes.length * 0.05;
+      const chordNotes = notes.slice(-3);
+      chordNotes.forEach((freq) => {
+        if (!this.ctx || !this.sfxGainNode) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, chordDelay);
+
+        gain.gain.setValueAtTime(0.12, chordDelay);
+        gain.gain.exponentialRampToValueAtTime(0.001, chordDelay + 0.7);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGainNode);
+
+        osc.start(chordDelay);
+        osc.stop(chordDelay + 0.72);
+      });
     } catch {}
   }
 

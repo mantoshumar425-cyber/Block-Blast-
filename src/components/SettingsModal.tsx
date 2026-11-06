@@ -4,8 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { X, Volume2, VolumeX, Music, Smartphone, Home, RotateCw, Shirt } from 'lucide-react';
-import { sounds } from '../utils/audio';
+import { X, Volume2, VolumeX, Music, Smartphone, Home, RotateCw, Shirt, Zap, Hammer, Sparkles, Check, TrendingUp } from 'lucide-react';
+import { sounds, HapticPreset } from '../utils/audio';
 import { BoardTheme } from '../types/game';
 import { BOARD_THEMES } from '../utils/themes';
 
@@ -22,6 +22,7 @@ interface SettingsModalProps {
   onOpenMoreGames?: () => void;
   onOpenMoreSettings?: () => void;
   onOpenSkinShop?: () => void;
+  onOpenStats?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -37,8 +38,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenMoreGames,
   onOpenMoreSettings,
   onOpenSkinShop,
+  onOpenStats,
 }) => {
   const [vibrationLevel, setVibrationLevel] = useState<number>(() => sounds.getVibrationLevel());
+  const [hapticPreset, setHapticPreset] = useState<HapticPreset>(() => sounds.getHapticPreset());
+  const [isTestingHaptic, setIsTestingHaptic] = useState<boolean>(false);
   const [bgmMuted, setBgmMuted] = useState<boolean>(() => sounds.getMusicVolume() === 0 || isMuted);
 
   const handleToggleSound = () => {
@@ -67,6 +71,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  const handleTestHaptic = (preset: HapticPreset) => {
+    if (vibrationLevel === 0) {
+      sounds.setVibrationLevel(2);
+      setVibrationLevel(2);
+    }
+    sounds.setHapticPreset(preset);
+    setHapticPreset(preset);
+    sounds.testHapticPreset(preset);
+    setIsTestingHaptic(true);
+    setTimeout(() => setIsTestingHaptic(false), 380);
+  };
+
   // Cycle skins
   const themeKeys: BoardTheme[] = ['classic_slate', 'sky_blue', 'midnight', 'neon', 'solar', 'emerald'];
   const handleCycleSkin = () => {
@@ -81,7 +97,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in select-none">
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-[340px] sm:max-w-[360px] rounded-[32px] bg-[#3f4249] border-[3.5px] border-[#767982] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.8)] text-white">
+      <div className="relative w-full max-w-[340px] sm:max-w-[360px] max-h-[92vh] overflow-y-auto rounded-[32px] bg-[#3f4249] border-[3.5px] border-[#767982] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.8)] text-white">
         {/* Header: Centered "Settings" and Top-Right Close Button */}
         <div className="relative flex items-center justify-center pb-2 mb-2">
           <h2
@@ -199,7 +215,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Dedicated Haptic Feedback Intensity Slider */}
-        <div className="mt-3 mb-1 px-3.5 py-2.5 rounded-2xl bg-[#2d3036] border border-[#50545f]">
+        <div className="mt-3 mb-2 px-3.5 py-2.5 rounded-2xl bg-[#2d3036] border border-[#50545f]">
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="font-bold text-slate-200">Haptic Intensity Slider</span>
             <span className="font-black text-[#ffcc00] uppercase text-[11px] tracking-wide">
@@ -221,6 +237,89 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <span className={vibrationLevel === 2 ? 'text-[#ffcc00]' : ''}>Medium</span>
             <span className={vibrationLevel === 3 ? 'text-[#ffcc00]' : ''}>Heavy</span>
           </div>
+        </div>
+
+        {/* Haptic Presets & Haptic Test Panel */}
+        <div className="mb-2 px-3.5 py-2.5 rounded-2xl bg-[#282b31] border border-[#484c56] flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Smartphone className="w-3.5 h-3.5 text-[#ffcc00]" />
+              <span className="text-xs font-bold text-slate-200">Blast Haptic Feel</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-medium">Choose & test preset</span>
+          </div>
+
+          {/* 3 Haptic Presets: Sharp, Heavy, Soft */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {/* 1. Sharp Preset */}
+            <button
+              type="button"
+              onClick={() => handleTestHaptic('sharp')}
+              className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                hapticPreset === 'sharp'
+                  ? 'bg-gradient-to-b from-[#22d3ee]/25 to-[#0284c7]/35 border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.35)] ring-1 ring-cyan-400'
+                  : 'bg-[#1e2025] border-[#40444f] hover:bg-[#252830] text-slate-300'
+              } ${isTestingHaptic && hapticPreset === 'sharp' ? 'animate-shake' : ''}`}
+            >
+              <div className="flex items-center gap-1">
+                <Zap className={`w-3.5 h-3.5 ${hapticPreset === 'sharp' ? 'text-cyan-300' : 'text-slate-400'}`} />
+                <span className="text-xs font-black text-white">Sharp</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-medium mt-0.5">Snappy click</span>
+            </button>
+
+            {/* 2. Heavy Preset */}
+            <button
+              type="button"
+              onClick={() => handleTestHaptic('heavy')}
+              className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                hapticPreset === 'heavy'
+                  ? 'bg-gradient-to-b from-[#f59e0b]/25 to-[#d97706]/35 border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.35)] ring-1 ring-amber-400'
+                  : 'bg-[#1e2025] border-[#40444f] hover:bg-[#252830] text-slate-300'
+              } ${isTestingHaptic && hapticPreset === 'heavy' ? 'animate-shake' : ''}`}
+            >
+              <div className="flex items-center gap-1">
+                <Hammer className={`w-3.5 h-3.5 ${hapticPreset === 'heavy' ? 'text-amber-300' : 'text-slate-400'}`} />
+                <span className="text-xs font-black text-white">Heavy</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-medium mt-0.5">Deep rumble</span>
+            </button>
+
+            {/* 3. Soft Preset */}
+            <button
+              type="button"
+              onClick={() => handleTestHaptic('soft')}
+              className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                hapticPreset === 'soft'
+                  ? 'bg-gradient-to-b from-[#34d399]/25 to-[#059669]/35 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.35)] ring-1 ring-emerald-400'
+                  : 'bg-[#1e2025] border-[#40444f] hover:bg-[#252830] text-slate-300'
+              } ${isTestingHaptic && hapticPreset === 'soft' ? 'animate-shake' : ''}`}
+            >
+              <div className="flex items-center gap-1">
+                <Sparkles className={`w-3.5 h-3.5 ${hapticPreset === 'soft' ? 'text-emerald-300' : 'text-slate-400'}`} />
+                <span className="text-xs font-black text-white">Soft</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-medium mt-0.5">Smooth pulse</span>
+            </button>
+          </div>
+
+          {/* Dedicated 'Haptic Test' Button */}
+          <button
+            type="button"
+            onClick={() => handleTestHaptic(hapticPreset)}
+            className={`w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#0284c7] via-[#0ea5e9] to-[#0284c7] hover:brightness-110 border border-sky-300/40 shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] ${
+              isTestingHaptic ? 'ring-2 ring-white scale-102 shadow-[0_0_15px_rgba(14,165,233,0.8)]' : ''
+            }`}
+            title="Tap to feel how this haptic preset vibrates"
+          >
+            <Smartphone className={`w-4 h-4 text-white ${isTestingHaptic ? 'animate-shake' : ''}`} />
+            <span className="text-xs font-black tracking-wide text-white">
+              Haptic Test: Feel &quot;{hapticPreset.toUpperCase()}&quot; Blast
+            </span>
+            <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded text-white font-mono font-bold">
+              TAP TO FEEL
+            </span>
+          </button>
         </div>
 
         {/* Vertical Stack of Chunky Beveled Buttons matching Screenshot */}
@@ -319,6 +418,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {currentSkinName}
             </span>
           </button>
+
+          {/* Button 6: 30-Day Stats - Purple */}
+          {onOpenStats && (
+            <button
+              onClick={() => {
+                sounds.playClick();
+                onClose();
+                onOpenStats();
+              }}
+              className="group relative w-full h-12 rounded-xl bg-gradient-to-b from-[#9333ea] via-[#7e22ce] to-[#6b21a8] border-t-2 border-l border-white/60 border-b-4 border-r border-[#4c1d95] shadow-[0_4px_0_#4c1d95] active:translate-y-1 active:shadow-none hover:brightness-105 transition-all flex items-center justify-start px-5 gap-4 cursor-pointer"
+              title="Track your daily score consistency over the last 30 days"
+            >
+              <TrendingUp className="w-6 h-6 text-white stroke-[2.8] shrink-0 drop-shadow-sm" />
+              <span className="text-xl font-bold italic tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+                30-Day Stats
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Bottom Metadata Matching Screenshot */}

@@ -45,6 +45,8 @@ import { MoreSettingsModal } from './components/MoreSettingsModal';
 import { SlidebarDrawer } from './components/SlidebarDrawer';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { submitDailyScore } from './utils/dailyLeaderboard';
+import { recordDailyScore } from './utils/statsHistory';
+import { CelebrationBanner, CelebrationBannerData, CelebrationTier } from './components/CelebrationBanner';
 import { Hammer, RotateCw, Bomb } from 'lucide-react';
 
 const BLAST_BACKGROUNDS = [
@@ -106,7 +108,7 @@ export default function App() {
     refresh: 3,
     bomb: 2,
   });
-  const [celebrationBanner, setCelebrationBanner] = useState<{ text: string; subtext?: string } | null>(null);
+  const [celebrationBanner, setCelebrationBanner] = useState<CelebrationBannerData | null>(null);
   const [isSlidebarOpen, setIsSlidebarOpen] = useState<boolean>(false);
   const [slidebarInitialTab, setSlidebarInitialTab] = useState<SlidebarTab>('menu');
 
@@ -349,19 +351,40 @@ export default function App() {
         if (nextCombo > 1) sounds.playComboStreak(nextCombo);
 
         // 3D Celebration Banners on high combo clears ("Amazing!", "Perfect!", "Great!", "Unbelievable!")
+        let celebrationTier: CelebrationTier | null = null;
+        let bannerText = '';
+        let bannerSubtext = '';
+
         if (nextCombo >= 5) {
-          setCelebrationBanner({ text: 'UNBELIEVABLE!', subtext: `${nextCombo}x Combo Streak!` });
+          celebrationTier = 'unbelievable';
+          bannerText = 'UNBELIEVABLE!';
+          bannerSubtext = `${nextCombo}x Mega Streak!`;
         } else if (nextCombo >= 4) {
-          setCelebrationBanner({ text: 'AWESOME!', subtext: `${nextCombo}x Multiplier!` });
+          celebrationTier = 'awesome';
+          bannerText = 'AWESOME!';
+          bannerSubtext = `${nextCombo}x Multiplier!`;
         } else if (nextCombo >= 3) {
-          setCelebrationBanner({ text: 'AMAZING!', subtext: `${nextCombo}x Multiplier!` });
+          celebrationTier = 'amazing';
+          bannerText = 'AMAZING!';
+          bannerSubtext = `${nextCombo}x Multiplier!`;
         } else if (nextCombo === 2) {
-          setCelebrationBanner({ text: 'GREAT!', subtext: '2x Multiplier!' });
+          celebrationTier = 'great';
+          bannerText = 'GREAT!';
+          bannerSubtext = '2x Multiplier!';
         } else if (totalClears >= 3) {
-          setCelebrationBanner({ text: 'PERFECT!', subtext: `${totalClears} Lines Blasted!` });
+          celebrationTier = 'perfect';
+          bannerText = 'PERFECT!';
+          bannerSubtext = `${totalClears} Lines Blast!`;
         }
-        if (nextCombo >= 2 || totalClears >= 3) {
-          setTimeout(() => setCelebrationBanner(null), 1400);
+
+        if (celebrationTier) {
+          sounds.playCelebrationFanfare(celebrationTier);
+          setCelebrationBanner({
+            text: bannerText,
+            subtext: bannerSubtext,
+            tier: celebrationTier,
+            combo: nextCombo,
+          });
         }
 
         setShake(true);
@@ -506,6 +529,7 @@ export default function App() {
 
       const newTotalScore = score + scoreGained;
       setScore(newTotalScore);
+      recordDailyScore(newTotalScore, totalClears);
 
       if (gameMode === 'daily') {
         const challenge = getTodayChallenge();
@@ -815,6 +839,7 @@ export default function App() {
             initGame(mode, 0);
           }}
           onOpenSettings={() => setShowSettings(true)}
+          onOpenStats={() => setShowStats(true)}
           onOpenMoreGames={() => {
             setPromoGameName(undefined);
             setShowMoreGames(true);
@@ -845,6 +870,16 @@ export default function App() {
               setShowSettings(false);
               setShowCustomizeModal(true);
             }}
+            onOpenStats={() => {
+              setShowSettings(false);
+              setShowStats(true);
+            }}
+          />
+        )}
+        {showStats && (
+          <StatsModal
+            onClose={() => setShowStats(false)}
+            highScore={highScore}
           />
         )}
         {showCustomizeModal && (
@@ -919,18 +954,12 @@ export default function App() {
       <ParticleCanvas triggers={particleTriggers} />
       <ScorePopups popups={scorePopups} />
 
-      {/* Floating 3D Celebration Banner on Combos ("Amazing!", "Great!", "Perfect!") */}
+      {/* Floating 3D Celebration Banner on Combos ("Amazing!", "Great!", "Perfect!", "Awesome!", "Unbelievable!") */}
       {celebrationBanner && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-40 pointer-events-none animate-float-fade flex flex-col items-center">
-          <div className="px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-rose-500 to-fuchsia-500 border-2 border-white shadow-[0_0_30px_rgba(251,191,36,0.9)] text-white font-black italic tracking-wider text-2xl sm:text-3xl uppercase transform -rotate-2">
-            {celebrationBanner.text}
-          </div>
-          {celebrationBanner.subtext && (
-            <span className="mt-1 text-xs sm:text-sm font-extrabold text-amber-200 tracking-wide drop-shadow-md">
-              {celebrationBanner.subtext}
-            </span>
-          )}
-        </div>
+        <CelebrationBanner
+          data={celebrationBanner}
+          onDismiss={() => setCelebrationBanner(null)}
+        />
       )}
 
       {/* Active Power-Up Instructional Badge */}
@@ -1065,6 +1094,7 @@ export default function App() {
           onHome={() => setGameState('TITLE_MENU')}
           dailyRank={dailyRank}
           onOpenLeaderboard={() => handleOpenSlidebar('leaderboard')}
+          onOpenStats={() => setShowStats(true)}
         />
       )}
 
@@ -1126,6 +1156,10 @@ export default function App() {
           onOpenSkinShop={() => {
             setShowSettings(false);
             setShowCustomizeModal(true);
+          }}
+          onOpenStats={() => {
+            setShowSettings(false);
+            setShowStats(true);
           }}
         />
       )}
