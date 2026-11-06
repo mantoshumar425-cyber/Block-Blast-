@@ -92,20 +92,92 @@ export const BOARD_THEMES: Record<BoardTheme, ThemeConfig> = {
   neon: {
     id: 'neon',
     name: 'Neon Cyber',
-    tagline: 'Electric violet & hot magenta motes',
+    tagline: 'Dynamic combo streak neon plasma aura',
     accentColor: '#e879f9',
-    previewGradient: 'from-fuchsia-600 via-purple-700 to-slate-950',
+    previewGradient: 'from-fuchsia-600 via-purple-700 to-cyan-500',
     boardBg: 'bg-[#0f071a]/95',
-    boardBorder: 'border-fuchsia-900/60',
-    boardShadow: 'shadow-[0_14px_45px_rgba(217,70,239,0.28)]',
+    boardBorder: 'border-fuchsia-500/80',
+    boardShadow: 'shadow-[0_14px_45px_rgba(217,70,239,0.4)]',
     cellEmptyBg: 'bg-[#1a0e2e]',
-    cellEmptyBorder: 'border-[#331852]/80',
-    cellDotColor: 'bg-fuchsia-500/35',
-    highlightGlow: 'ring-fuchsia-400/80 shadow-[0_0_24px_rgba(217,70,239,0.5)]',
+    cellEmptyBorder: 'border-[#381a5e]',
+    cellDotColor: 'bg-fuchsia-400/50',
+    highlightGlow: 'ring-cyan-300 shadow-[0_0_28px_rgba(6,182,212,0.8)]',
     ringGlow: 'ring-fuchsia-400',
     particleClass: 'animate-float-neon',
-    particleColor: 'rgba(232, 121, 249, 0.8)',
-    ambientGrad: 'radial-gradient(circle at 50% 50%, rgba(217, 70, 239, 0.14) 0%, transparent 70%)',
+    particleColor: 'rgba(232, 121, 249, 0.85)',
+    ambientGrad: 'radial-gradient(circle at 50% 50%, rgba(217, 70, 239, 0.18) 0%, rgba(6, 182, 212, 0.15) 50%, transparent 75%)',
+  },
+  wood: {
+    id: 'wood',
+    name: 'Wooden Forest',
+    tagline: 'Warm oak timber & jungle leaves',
+    accentColor: '#f59e0b',
+    previewGradient: 'from-amber-700 via-stone-800 to-emerald-950',
+    boardBg: 'bg-[#21160d]/95',
+    boardBorder: 'border-[#543820]',
+    boardShadow: 'shadow-[0_14px_40px_rgba(40,24,10,0.6)]',
+    cellEmptyBg: 'bg-[#2b1c11]',
+    cellEmptyBorder: 'border-[#3f2a1b]',
+    cellDotColor: 'bg-amber-600/30',
+    highlightGlow: 'ring-amber-400/80 shadow-[0_0_24px_rgba(245,158,11,0.5)]',
+    ringGlow: 'ring-amber-400',
+    particleClass: 'animate-float-ember',
+    particleColor: 'rgba(245, 158, 11, 0.7)',
+    ambientGrad: 'radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.1) 0%, transparent 70%)',
+  },
+  cheese: {
+    id: 'cheese',
+    name: 'Cheese & Dice',
+    tagline: 'Chunky gouda cubes & lucky dice',
+    accentColor: '#fbbf24',
+    previewGradient: 'from-amber-400 via-yellow-500 to-orange-600',
+    boardBg: 'bg-[#2d2208]/95',
+    boardBorder: 'border-[#855e0c]',
+    boardShadow: 'shadow-[0_14px_40px_rgba(251,191,36,0.25)]',
+    cellEmptyBg: 'bg-[#3d2f0d]',
+    cellEmptyBorder: 'border-[#5c4613]',
+    cellDotColor: 'bg-amber-300/40',
+    highlightGlow: 'ring-yellow-300 shadow-[0_0_24px_rgba(253,224,71,0.6)]',
+    ringGlow: 'ring-yellow-400',
+    particleClass: 'animate-float-ember',
+    particleColor: 'rgba(251, 191, 36, 0.85)',
+    ambientGrad: 'radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.15) 0%, transparent 70%)',
+  },
+  watermelon: {
+    id: 'watermelon',
+    name: 'Watermelon Summer',
+    tagline: 'Fresh ruby melon with emerald rind',
+    accentColor: '#f43f5e',
+    previewGradient: 'from-rose-500 via-red-600 to-emerald-800',
+    boardBg: 'bg-[#21090f]/95',
+    boardBorder: 'border-[#591626]',
+    boardShadow: 'shadow-[0_14px_40px_rgba(244,63,94,0.3)]',
+    cellEmptyBg: 'bg-[#2f1019]',
+    cellEmptyBorder: 'border-[#4a1c28]',
+    cellDotColor: 'bg-rose-400/40',
+    highlightGlow: 'ring-emerald-400 shadow-[0_0_24px_rgba(52,211,153,0.6)]',
+    ringGlow: 'ring-rose-400',
+    particleClass: 'animate-float-neon',
+    particleColor: 'rgba(244, 63, 94, 0.8)',
+    ambientGrad: 'radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.12) 0%, transparent 70%)',
+  },
+  photo_custom: {
+    id: 'photo_custom',
+    name: 'Custom Photo Skin',
+    tagline: 'Your custom image tiled across puzzle blocks',
+    accentColor: '#38bdf8',
+    previewGradient: 'from-sky-400 via-indigo-500 to-purple-600',
+    boardBg: 'bg-[#182030]/95',
+    boardBorder: 'border-sky-500/60',
+    boardShadow: 'shadow-[0_14px_45px_rgba(56,189,248,0.3)]',
+    cellEmptyBg: 'bg-[#111827]',
+    cellEmptyBorder: 'border-[#1f2937]',
+    cellDotColor: 'bg-sky-400/20',
+    highlightGlow: 'ring-sky-300 shadow-[0_0_24px_rgba(56,189,248,0.6)]',
+    ringGlow: 'ring-sky-400',
+    particleClass: 'animate-float-starlight',
+    particleColor: 'rgba(56, 189, 248, 0.7)',
+    ambientGrad: 'radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.1) 0%, transparent 70%)',
   },
   solar: {
     id: 'solar',
@@ -144,6 +216,44 @@ export const BOARD_THEMES: Record<BoardTheme, ThemeConfig> = {
     ambientGrad: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.14) 0%, transparent 70%)',
   },
 };
+
+// Dynamic combo styles helper for Neon Cyber theme
+export function getNeonComboConfig(combo: number) {
+  if (combo <= 0) {
+    return {
+      borderColor: '#a855f7',
+      boardShadow: '0 0 25px rgba(168, 85, 247, 0.45)',
+      cellGlow: 'rgba(168, 85, 247, 0.35)',
+      pulseSpeed: '3s',
+      streakLabel: 'NEON 1X',
+    };
+  }
+  if (combo <= 2) {
+    return {
+      borderColor: '#06b6d4',
+      boardShadow: '0 0 35px rgba(6, 182, 212, 0.75)',
+      cellGlow: 'rgba(6, 182, 212, 0.65)',
+      pulseSpeed: '2s',
+      streakLabel: `NEON STREAK x${combo}`,
+    };
+  }
+  if (combo <= 4) {
+    return {
+      borderColor: '#ec4899',
+      boardShadow: '0 0 45px rgba(236, 72, 153, 0.9)',
+      cellGlow: 'rgba(236, 72, 153, 0.8)',
+      pulseSpeed: '1.2s',
+      streakLabel: `OVERDRIVE x${combo} 🔥`,
+    };
+  }
+  return {
+    borderColor: '#f43f5e',
+    boardShadow: '0 0 60px rgba(244, 63, 94, 1.0), 0 0 30px rgba(234, 179, 8, 0.8)',
+    cellGlow: 'rgba(244, 63, 94, 0.95)',
+    pulseSpeed: '0.7s',
+    streakLabel: `HYPERCYBER x${combo} ⚡⚡`,
+  };
+}
 
 // 12 deterministic floating particle positions inside GameBoard
 export const STATIC_THEME_PARTICLES: ThemeParticle[] = [

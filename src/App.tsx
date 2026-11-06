@@ -39,11 +39,13 @@ import { GameOverModal, PauseModal, VictoryModal } from './components/Modals';
 import { HowToPlayModal } from './components/HowToPlayModal';
 import { StatsModal } from './components/StatsModal';
 import { SettingsModal } from './components/SettingsModal';
+import { CustomPhotoModal } from './components/CustomPhotoModal';
 import { MoreGamesModal } from './components/MoreGamesModal';
 import { MoreSettingsModal } from './components/MoreSettingsModal';
 import { SlidebarDrawer } from './components/SlidebarDrawer';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { submitDailyScore } from './utils/dailyLeaderboard';
+import { Hammer, RotateCw, Bomb } from 'lucide-react';
 
 const BLAST_BACKGROUNDS = [
   'radial-gradient(ellipse at 15% 20%, rgba(14, 165, 233, 0.75) 0%, transparent 50%), radial-gradient(ellipse at 85% 18%, rgba(20, 184, 166, 0.70) 0%, transparent 50%), radial-gradient(ellipse at 50% 90%, rgba(6, 182, 212, 0.60) 0%, transparent 55%), linear-gradient(135deg, #021f2d 0%, #053b4f 50%, #011520 100%)',
@@ -91,6 +93,20 @@ export default function App() {
   const [showStats, setShowStats] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [currentTheme, setCurrentTheme] = useState<BoardTheme>(() => getSavedTheme());
+  const [customPhotoUrl, setCustomPhotoUrl] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('blockblast_custom_photo');
+    }
+    return null;
+  });
+  const [showCustomizeModal, setShowCustomizeModal] = useState<boolean>(false);
+  const [activePowerUp, setActivePowerUp] = useState<'hammer' | 'bomb' | null>(null);
+  const [powerUpCounts, setPowerUpCounts] = useState<{ hammer: number; refresh: number; bomb: number }>({
+    hammer: 3,
+    refresh: 3,
+    bomb: 2,
+  });
+  const [celebrationBanner, setCelebrationBanner] = useState<{ text: string; subtext?: string } | null>(null);
   const [isSlidebarOpen, setIsSlidebarOpen] = useState<boolean>(false);
   const [slidebarInitialTab, setSlidebarInitialTab] = useState<SlidebarTab>('menu');
 
@@ -146,6 +162,8 @@ export default function App() {
       setHighlightedRows([]);
       setHighlightedCols([]);
       setBlastBackgroundIndex(0);
+      setActivePowerUp(null);
+      setCelebrationBanner(null);
 
       if (typeof window !== 'undefined') {
         const games = parseInt(localStorage.getItem('blockblast_games_played') || '0', 10);
@@ -329,6 +347,22 @@ export default function App() {
         sounds.triggerHaptic('blast');
 
         if (nextCombo > 1) sounds.playComboStreak(nextCombo);
+
+        // 3D Celebration Banners on high combo clears ("Amazing!", "Perfect!", "Great!", "Unbelievable!")
+        if (nextCombo >= 5) {
+          setCelebrationBanner({ text: 'UNBELIEVABLE!', subtext: `${nextCombo}x Combo Streak!` });
+        } else if (nextCombo >= 4) {
+          setCelebrationBanner({ text: 'AWESOME!', subtext: `${nextCombo}x Multiplier!` });
+        } else if (nextCombo >= 3) {
+          setCelebrationBanner({ text: 'AMAZING!', subtext: `${nextCombo}x Multiplier!` });
+        } else if (nextCombo === 2) {
+          setCelebrationBanner({ text: 'GREAT!', subtext: '2x Multiplier!' });
+        } else if (totalClears >= 3) {
+          setCelebrationBanner({ text: 'PERFECT!', subtext: `${totalClears} Lines Blasted!` });
+        }
+        if (nextCombo >= 2 || totalClears >= 3) {
+          setTimeout(() => setCelebrationBanner(null), 1400);
+        }
 
         setShake(true);
         setTimeout(() => setShake(false), 240);
@@ -530,9 +564,118 @@ export default function App() {
   );
 
   const handleCellClick = (row: number, col: number) => {
+    // 1. Hammer Power-Up: Smash single block
+    if (activePowerUp === 'hammer') {
+      if (grid[row][col]) {
+        sounds.playPlace();
+        sounds.triggerHaptic('blast');
+        setShake(true);
+        setTimeout(() => setShake(false), 200);
+
+        if (boardRef.current) {
+          const boardRect = boardRef.current.getBoundingClientRect();
+          const cellSize = boardRect.width / 8;
+          setParticleTriggers([
+            {
+              x: boardRect.left + (col + 0.5) * cellSize,
+              y: boardRect.top + (row + 0.5) * cellSize,
+              color: '#f59e0b',
+              count: 22,
+              type: 'burst',
+            },
+          ]);
+        }
+
+        const newGrid = grid.map((r, ri) =>
+          r.map((c, ci) => (ri === row && ci === col ? null : c))
+        );
+        setGrid(newGrid);
+        setScore((s) => s + 10);
+        setPowerUpCounts((p) => ({ ...p, hammer: Math.max(0, p.hammer - 1) }));
+        setActivePowerUp(null);
+      }
+      return;
+    }
+
+    // 2. Bomb Power-Up: Blast 3x3 radius
+    if (activePowerUp === 'bomb') {
+      sounds.playLineClear(3, combo);
+      sounds.triggerHaptic('blast');
+      setShake(true);
+      setTimeout(() => setShake(false), 280);
+
+      if (boardRef.current) {
+        const boardRect = boardRef.current.getBoundingClientRect();
+        const cellSize = boardRect.width / 8;
+        setParticleTriggers([
+          {
+            x: boardRect.left + (col + 0.5) * cellSize,
+            y: boardRect.top + (row + 0.5) * cellSize,
+            color: '#ef4444',
+            count: 36,
+            type: 'burst',
+          },
+          {
+            x: boardRect.left + (col + 0.5) * cellSize,
+            y: boardRect.top + (row + 0.5) * cellSize,
+            color: '#fbbf24',
+            type: 'ring',
+          },
+        ]);
+      }
+
+      let clearedCount = 0;
+      const newGrid = grid.map((r, ri) =>
+        r.map((c, ci) => {
+          if (Math.abs(ri - row) <= 1 && Math.abs(ci - col) <= 1 && c !== null) {
+            clearedCount++;
+            return null;
+          }
+          return c;
+        })
+      );
+      setGrid(newGrid);
+      setScore((s) => s + clearedCount * 10 + 25);
+      setPowerUpCounts((p) => ({ ...p, bomb: Math.max(0, p.bomb - 1) }));
+      setActivePowerUp(null);
+      return;
+    }
+
     if (selectedPieceIndex !== null && pieces[selectedPieceIndex]) {
       handlePlacePiece(selectedPieceIndex, row, col);
     }
+  };
+
+  const handleUseHammer = () => {
+    sounds.playClick();
+    if (powerUpCounts.hammer <= 0) {
+      setPowerUpCounts((p) => ({ ...p, hammer: 3 }));
+      return;
+    }
+    setActivePowerUp((prev) => (prev === 'hammer' ? null : 'hammer'));
+  };
+
+  const handleUseBomb = () => {
+    sounds.playClick();
+    if (powerUpCounts.bomb <= 0) {
+      setPowerUpCounts((p) => ({ ...p, bomb: 2 }));
+      return;
+    }
+    setActivePowerUp((prev) => (prev === 'bomb' ? null : 'bomb'));
+  };
+
+  const handleUseRefresh = () => {
+    sounds.playPickup();
+    sounds.triggerHaptic('pickup');
+    if (powerUpCounts.refresh <= 0) {
+      setPowerUpCounts((p) => ({ ...p, refresh: 3 }));
+      return;
+    }
+    setPowerUpCounts((p) => ({ ...p, refresh: Math.max(0, p.refresh - 1) }));
+    const newPieces = generatePieceBatch(grid);
+    setPieces(newPieces);
+    setSelectedPieceIndex(null);
+    setHoverPos(null);
   };
 
   const handleSelectPiece = (index: number) => {
@@ -698,6 +841,22 @@ export default function App() {
               setShowMoreGames(true);
             }}
             onOpenMoreSettings={() => setShowMoreSettings(true)}
+            onOpenSkinShop={() => {
+              setShowSettings(false);
+              setShowCustomizeModal(true);
+            }}
+          />
+        )}
+        {showCustomizeModal && (
+          <CustomPhotoModal
+            onClose={() => setShowCustomizeModal(false)}
+            currentTheme={currentTheme}
+            onSelectTheme={handleThemeChange}
+            customPhotoUrl={customPhotoUrl}
+            onSetCustomPhotoUrl={(url) => {
+              setCustomPhotoUrl(url);
+              if (url) handleThemeChange('photo_custom');
+            }}
           />
         )}
         {showMoreGames && (
@@ -760,6 +919,33 @@ export default function App() {
       <ParticleCanvas triggers={particleTriggers} />
       <ScorePopups popups={scorePopups} />
 
+      {/* Floating 3D Celebration Banner on Combos ("Amazing!", "Great!", "Perfect!") */}
+      {celebrationBanner && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-40 pointer-events-none animate-float-fade flex flex-col items-center">
+          <div className="px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-rose-500 to-fuchsia-500 border-2 border-white shadow-[0_0_30px_rgba(251,191,36,0.9)] text-white font-black italic tracking-wider text-2xl sm:text-3xl uppercase transform -rotate-2">
+            {celebrationBanner.text}
+          </div>
+          {celebrationBanner.subtext && (
+            <span className="mt-1 text-xs sm:text-sm font-extrabold text-amber-200 tracking-wide drop-shadow-md">
+              {celebrationBanner.subtext}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Active Power-Up Instructional Badge */}
+      {activePowerUp && (
+        <div className="absolute top-20 z-30 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400 text-amber-300 text-xs font-bold shadow-lg animate-bounce flex items-center gap-2">
+          <span>{activePowerUp === 'hammer' ? '🔨 Tap any block on the board to smash it!' : '💣 Tap any cell to blast a 3x3 area!'}</span>
+          <button
+            onClick={() => setActivePowerUp(null)}
+            className="ml-1 text-slate-400 hover:text-white font-mono px-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <HUD
         score={score}
         highScore={highScore}
@@ -769,6 +955,7 @@ export default function App() {
         collectedGems={collectedGems}
         targetGems={currentLevel?.targetGems}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenCustomize={() => setShowCustomizeModal(true)}
       />
 
       <main className="flex-1 flex items-center justify-center w-full z-10 py-1">
@@ -783,10 +970,12 @@ export default function App() {
           boardRef={boardRef}
           shake={shake}
           theme={currentTheme}
+          combo={combo}
+          customPhotoUrl={customPhotoUrl}
         />
       </main>
 
-      <footer className="w-full flex justify-center z-10 pb-2">
+      <footer className="w-full flex flex-col items-center z-10 pb-2">
         <PieceTray
           pieces={pieces}
           selectedPieceIndex={selectedPieceIndex}
@@ -795,6 +984,56 @@ export default function App() {
           onSelectPiece={handleSelectPiece}
           onPointerDownPiece={handlePointerDownPiece}
         />
+
+        {/* 3 Circular Power-Up Buttons matching mobile Screenshot_20261106_130327_88bb2186.jpg */}
+        <div className="flex items-center justify-center gap-7 mt-2">
+          {/* Mallet / Hammer Button */}
+          <button
+            onClick={handleUseHammer}
+            className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95 ${
+              activePowerUp === 'hammer'
+                ? 'bg-amber-400 ring-4 ring-amber-300 text-slate-950 scale-110 shadow-[0_0_15px_rgba(251,191,36,0.9)]'
+                : 'bg-gradient-to-b from-[#60a5fa] via-[#3b82f6] to-[#2563eb] text-white hover:brightness-110 border-2 border-sky-200/50 shadow-[0_4px_10px_rgba(37,99,235,0.4)]'
+            }`}
+            title="Hammer: Tap any block to break it"
+            aria-label="Hammer Tool"
+          >
+            <Hammer className="w-5 h-5 stroke-[2.4]" />
+            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#1e293b] border border-white text-[9px] font-black text-amber-300 flex items-center justify-center">
+              {powerUpCounts.hammer}
+            </span>
+          </button>
+
+          {/* Refresh / Reroll Button */}
+          <button
+            onClick={handleUseRefresh}
+            className="relative w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95 bg-gradient-to-b from-[#60a5fa] via-[#3b82f6] to-[#2563eb] text-white hover:brightness-110 border-2 border-sky-200/50 shadow-[0_4px_10px_rgba(37,99,235,0.4)]"
+            title="Refresh: Reroll tray pieces"
+            aria-label="Refresh Pieces"
+          >
+            <RotateCw className="w-5 h-5 stroke-[2.4]" />
+            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#1e293b] border border-white text-[9px] font-black text-sky-300 flex items-center justify-center">
+              {powerUpCounts.refresh}
+            </span>
+          </button>
+
+          {/* Bomb Button */}
+          <button
+            onClick={handleUseBomb}
+            className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95 ${
+              activePowerUp === 'bomb'
+                ? 'bg-rose-500 ring-4 ring-rose-300 text-white scale-110 shadow-[0_0_15px_rgba(244,63,94,0.9)]'
+                : 'bg-gradient-to-b from-[#60a5fa] via-[#3b82f6] to-[#2563eb] text-white hover:brightness-110 border-2 border-sky-200/50 shadow-[0_4px_10px_rgba(37,99,235,0.4)]'
+            }`}
+            title="Bomb: Blasts a 3x3 area"
+            aria-label="Bomb Tool"
+          >
+            <Bomb className="w-5 h-5 stroke-[2.4]" />
+            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#1e293b] border border-white text-[9px] font-black text-rose-300 flex items-center justify-center">
+              {powerUpCounts.bomb}
+            </span>
+          </button>
+        </div>
       </footer>
 
       {draggedPiece && dragPointerPos && (
@@ -884,6 +1123,23 @@ export default function App() {
             setShowMoreGames(true);
           }}
           onOpenMoreSettings={() => setShowMoreSettings(true)}
+          onOpenSkinShop={() => {
+            setShowSettings(false);
+            setShowCustomizeModal(true);
+          }}
+        />
+      )}
+
+      {showCustomizeModal && (
+        <CustomPhotoModal
+          onClose={() => setShowCustomizeModal(false)}
+          currentTheme={currentTheme}
+          onSelectTheme={handleThemeChange}
+          customPhotoUrl={customPhotoUrl}
+          onSetCustomPhotoUrl={(url) => {
+            setCustomPhotoUrl(url);
+            if (url) handleThemeChange('photo_custom');
+          }}
         />
       )}
 

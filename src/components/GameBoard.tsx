@@ -1,7 +1,7 @@
 import React from 'react';
 import { GridCell, Piece, BoardTheme } from '../types/game';
 import { GridBlockCell } from './BlockPiece';
-import { BOARD_THEMES, STATIC_THEME_PARTICLES } from '../utils/themes';
+import { BOARD_THEMES, STATIC_THEME_PARTICLES, getNeonComboConfig } from '../utils/themes';
 
 interface GameBoardProps {
   grid: (GridCell | null)[][];
@@ -14,6 +14,8 @@ interface GameBoardProps {
   boardRef: React.RefObject<HTMLDivElement | null>;
   shake: boolean;
   theme?: BoardTheme;
+  combo?: number;
+  customPhotoUrl?: string | null;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({
@@ -27,8 +29,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   boardRef,
   shake,
   theme = 'sky_blue',
+  combo = 0,
+  customPhotoUrl = null,
 }) => {
   const themeConfig = BOARD_THEMES[theme] || BOARD_THEMES.sky_blue;
+  const isNeonTheme = theme === 'neon';
+  const neonComboCfg = isNeonTheme ? getNeonComboConfig(combo) : null;
 
   // Build a lookup for ghost cells
   const isGhostCell = (r: number, c: number): boolean => {
@@ -56,6 +62,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         maxWidth: '100%',
         width: 'min(92vw, 420px)',
         aspectRatio: '1 / 1',
+        ...(isNeonTheme && neonComboCfg
+          ? {
+              borderColor: neonComboCfg.borderColor,
+              boxShadow: `0 0 ${12 + Math.min(24, combo * 5)}px ${neonComboCfg.cellGlow}, 0 10px 30px rgba(0,0,0,0.6)`,
+            }
+          : {}),
       }}
     >
       {/* Subtle Ambient Gradient Layer */}
@@ -118,6 +130,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     colorKey={activePiece.colorKey}
                     isGhost={true}
                     boardTheme={theme}
+                    row={r}
+                    col={c}
+                    combo={combo}
+                    customPhotoUrl={customPhotoUrl}
                   />
                 ) : (
                   <GridBlockCell
@@ -127,6 +143,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     clearing={cell?.clearing}
                     isHighlighted={isLit}
                     boardTheme={theme}
+                    row={r}
+                    col={c}
+                    combo={combo}
+                    customPhotoUrl={customPhotoUrl}
                   />
                 )}
               </div>

@@ -21,6 +21,7 @@ interface SettingsModalProps {
   onReplay?: () => void;
   onOpenMoreGames?: () => void;
   onOpenMoreSettings?: () => void;
+  onOpenSkinShop?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -35,6 +36,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onReplay,
   onOpenMoreGames,
   onOpenMoreSettings,
+  onOpenSkinShop,
 }) => {
   const [vibrationLevel, setVibrationLevel] = useState<number>(() => sounds.getVibrationLevel());
   const [bgmMuted, setBgmMuted] = useState<boolean>(() => sounds.getMusicVolume() === 0 || isMuted);
@@ -165,7 +167,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <span className="mt-2 text-xs font-bold text-slate-200 tracking-wide">Vibration</span>
 
-            {/* Slider / Level controller: [-] ●-- [+] */}
+            {/* Stepper buttons: [-] ●-- [+] */}
             <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#2c2e33] border border-[#50545f]">
               <button
                 onClick={() => handleSetVibrationLevel(vibrationLevel - 1)}
@@ -196,8 +198,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
+        {/* Dedicated Haptic Feedback Intensity Slider */}
+        <div className="mt-3 mb-1 px-3.5 py-2.5 rounded-2xl bg-[#2d3036] border border-[#50545f]">
+          <div className="flex items-center justify-between text-xs mb-1.5">
+            <span className="font-bold text-slate-200">Haptic Intensity Slider</span>
+            <span className="font-black text-[#ffcc00] uppercase text-[11px] tracking-wide">
+              {vibrationLevel === 0 ? 'Off' : vibrationLevel === 1 ? 'Light' : vibrationLevel === 2 ? 'Medium' : 'Heavy'}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="3"
+            step="1"
+            value={vibrationLevel}
+            onChange={(e) => handleSetVibrationLevel(parseInt(e.target.value, 10))}
+            className="w-full h-2 bg-[#3f4249] rounded-lg appearance-none cursor-pointer accent-[#ffcc00]"
+          />
+          <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1 px-0.5">
+            <span className={vibrationLevel === 0 ? 'text-[#ffcc00]' : ''}>Off</span>
+            <span className={vibrationLevel === 1 ? 'text-[#ffcc00]' : ''}>Light</span>
+            <span className={vibrationLevel === 2 ? 'text-[#ffcc00]' : ''}>Medium</span>
+            <span className={vibrationLevel === 3 ? 'text-[#ffcc00]' : ''}>Heavy</span>
+          </div>
+        </div>
+
         {/* Vertical Stack of Chunky Beveled Buttons matching Screenshot */}
-        <div className="flex flex-col gap-3 pt-4">
+        <div className="flex flex-col gap-3 pt-3">
           {/* Button 1: More Games - Green */}
           <button
             onClick={() => {
@@ -276,7 +303,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Button 5: Default Skin - Sky Blue */}
           <button
-            onClick={handleCycleSkin}
+            onClick={() => {
+              if (onOpenSkinShop) {
+                sounds.playClick();
+                onOpenSkinShop();
+              } else {
+                handleCycleSkin();
+              }
+            }}
             className="group relative w-full h-12 rounded-xl bg-gradient-to-b from-[#00a8ff] via-[#0094e8] to-[#007cc7] border-t-2 border-l border-white/60 border-b-4 border-r border-[#00528a] shadow-[0_4px_0_#00528a] active:translate-y-1 active:shadow-none hover:brightness-105 transition-all flex items-center justify-start px-5 gap-4 cursor-pointer"
             title="Click to change board skin"
           >
